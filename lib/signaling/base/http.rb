@@ -20,9 +20,8 @@ module Signaling::Base::Http
       http_method = http_method_for(action)
       path_params, body_params = split_params(action, params)
       path = path_for(action, path_params)
-      body = scope_params(body_params)
 
-      response = connection.send(http_method, path, body)
+      response = connection.send(http_method, path, body_params)
 
       block ? block.call(response.body) : response.body
     end
@@ -89,18 +88,8 @@ module Signaling::Base::Http
       method || raise(UndefinedAction, action)
     end
 
-    def scope_params(params)
-      key = params.is_a?(Array) ? param_key.pluralize : param_key
-
-      { key => to_params(params, true) }
-    end
-
     def route_key
       ActiveModel::Naming.route_key(self).pluralize
-    end
-
-    def param_key
-      ActiveModel::Naming.param_key(self)
     end
 
     # changes attribtue names to param names (defined by ":param_name")

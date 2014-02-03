@@ -170,6 +170,14 @@ Then you can use:
     # GET /accounts/123/item_lists.json
 
 
+### Query parameters
+
+signaling allows sending parameters to remote service:
+
+    > ItemList.all(account_id: '123')
+    # GET /item_lists.json?account_id=123
+
+
 ## Contributing
 
 1. Fork it

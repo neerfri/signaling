@@ -3,7 +3,7 @@ module Signaling::Base::Persistence
 
   module ClassMethods
     def create(params)
-      from_response(request(:create, params))
+      from_response(request(:create, scope_params(params)))
     rescue Signaling::Error::UnprocessableEntity => e
       from_response(e.response[:body])
     end
@@ -12,6 +12,15 @@ module Signaling::Base::Persistence
       from_response(request(:destroy, id: id))
     end
 
+    def scope_params(params)
+      key = params.is_a?(Array) ? param_key.pluralize : param_key
+
+      { key => to_params(params, true) }
+    end
+
+    def param_key
+      ActiveModel::Naming.param_key(self)
+    end
   end
 
   def new?
@@ -45,13 +54,15 @@ module Signaling::Base::Persistence
   private
 
   def update(params = attributes)
-    self.class.request(:update, params.merge(id: self.id)) do |response|
+    params = self.class.scope_params(params).merge(id: self.id)
+    self.class.request(:update, params) do |response|
       self.attributes = response
     end
   end
 
   def create
-    self.class.request(:create, attributes.except(:id)) do |response|
+    params = self.class.scope_params(attributes.except(:id))
+    self.class.request(:create, params) do |response|
       self.attributes = response
     end
   end
