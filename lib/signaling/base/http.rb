@@ -28,11 +28,12 @@ module Signaling::Base::Http
     end
 
     def define_action(action_name, options)
-      self._defined_actions ||= {}
       unless options[:method] && options[:path]
         raise ArgumentError, ':method and :path options are required'
       end
-      self._defined_actions[action_name.to_sym] = options
+
+      actions = self._defined_actions || {}
+      self._defined_actions = actions.merge(action_name.to_sym => options)
     end
 
     # convert value to params-friendly hash/array

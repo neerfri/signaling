@@ -151,6 +151,25 @@ Then signaling will load these errors to the `ItemList` models
 This file serves as a reference implementation for a controller and as a guide
 to make sure Signaling follows it's main goal.
 
+
+### Custom action paths
+
+To change the URL of a specific action:
+
+    module ExampleCom
+      class ItemList < Signaling::Base
+        use_api ExampleCom::Api
+
+        define_action :index, method: :get, path: 'accounts/:account_id/item_lists.json'
+      end
+    end
+
+Then you can use:
+
+    > lists = ExampleCom::ItemList.all(account_id: '123')
+    # GET /accounts/123/item_lists.json
+
+
 ## Contributing
 
 1. Fork it
