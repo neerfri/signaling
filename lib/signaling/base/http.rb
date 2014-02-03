@@ -1,3 +1,5 @@
+require 'addressable/template'
+
 module Signaling::Base::Http
   extend ActiveSupport::Concern
 
@@ -13,11 +15,14 @@ module Signaling::Base::Http
 
   module ClassMethods
     def request(action, params = {}, &block)
-      http_method = http_method_for(action)
-      path = path_for(action, id: params[:id])
-      scoped_params = scope_params(params.except(:id))
+      params = params.with_indifferent_access
 
-      response = connection.send(http_method, path, scoped_params)
+      http_method = http_method_for(action)
+      path_params, body_params = split_params(action, params)
+      path = path_for(action, path_params)
+      body = scope_params(body_params)
+
+      response = connection.send(http_method, path, body)
 
       block ? block.call(response.body) : response.body
     end
@@ -48,13 +53,33 @@ module Signaling::Base::Http
 
     protected
 
-    def path_for(action, options = nil)
-      path = _defined_actions.try(:[], action).try(:[], :path)
+    def defined_action(action)
+      _defined_actions.try(:[], action) or raise(UndefinedAction, action)
+    end
 
-      raise(UndefinedAction, action) unless path
+    def split_params(action, params)
+      path = defined_action(action)[:path]
 
-      path.gsub(":route_key", route_key)
-        .gsub(":id") { options[:id] || raise('missing :id parameter for route') }
+      path_params = params.slice(*path_parameters(path))
+      body_params = params.except(*path_parameters(path))
+
+      return path_params, body_params
+    end
+
+    def path_parameters(path)
+      path.scan(/:([^\/.]*)/).flatten
+    end
+
+    def path_for(action, parameters = {})
+      path = defined_action(action)[:path]
+
+      parameters = parameters.merge(route_key: route_key)
+
+      path_parameters(path).each do |parameter|
+        path = path.gsub(":#{parameter}", parameters[parameter].to_s)
+      end
+
+      path
     end
 
     def http_method_for(action)
